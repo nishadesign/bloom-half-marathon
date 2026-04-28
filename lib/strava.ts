@@ -3,10 +3,14 @@ import { prisma } from "./db";
 const STRAVA_API = "https://www.strava.com/api/v3";
 const STRAVA_OAUTH = "https://www.strava.com/oauth/token";
 
-export function buildAuthUrl() {
+export function buildAuthUrl(requestOrigin?: string) {
+  const fallback = requestOrigin
+    ? `${requestOrigin}/api/strava/callback`
+    : "";
+  const redirectUri = process.env.STRAVA_REDIRECT_URI || fallback;
   const params = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID ?? "",
-    redirect_uri: process.env.STRAVA_REDIRECT_URI ?? "",
+    redirect_uri: redirectUri,
     response_type: "code",
     approval_prompt: "auto",
     scope: "read,activity:read_all",
