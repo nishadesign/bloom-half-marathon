@@ -34,7 +34,7 @@ function mondayOf(d: Date) {
 
 function istKey(d: Date): string {
   const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
+    timeZone: "America/Los_Angeles",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -44,7 +44,7 @@ function istKey(d: Date): string {
 }
 
 function istWeekday(d: Date): string {
-  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", weekday: "short" });
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short" });
   const label = fmt.format(d);
   return DAY_SHORT.find((d) => label.startsWith(d)) ?? label;
 }

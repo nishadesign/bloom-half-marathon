@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { istDayKey } from "@/lib/tz";
+import { istDayKey, istDayStartUTC, istDayEndUTC } from "@/lib/tz";
 
 function dayBounds(isoDate: string) {
-  // isoDate is an IST day key (YYYY-MM-DD). Window = IST midnight -> next IST midnight in UTC.
   const [y, m, d] = isoDate.split("-").map(Number);
-  const start = new Date(Date.UTC(y, m - 1, d) - 5.5 * 60 * 60 * 1000);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start, end };
+  const ref = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  return { start: istDayStartUTC(ref), end: istDayEndUTC(ref) };
 }
 
 export async function GET(req: NextRequest) {
@@ -43,10 +41,11 @@ export async function POST(req: NextRequest) {
   const meal = await prisma.meal.findUnique({ where: { id: body.mealId } });
   if (!meal) return NextResponse.json({ error: "Meal not found" }, { status: 404 });
 
-  // Store the log's date at noon IST so it falls within the IST day window when queried.
+  // Store at noon local time so it always lands inside the local day window.
   const dayKey = body.date ?? istDayKey();
   const [y, m, d] = dayKey.split("-").map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d, 6, 30, 0));
+  const start = istDayStartUTC(new Date(Date.UTC(y, m - 1, d, 12, 0, 0)));
+  const date = new Date(start.getTime() + 12 * 60 * 60 * 1000);
 
   const log = await prisma.mealLog.create({
     data: {

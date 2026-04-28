@@ -1,6 +1,7 @@
-const TZ = "Asia/Kolkata";
+const TZ = "America/Los_Angeles";
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function istParts(d: Date) {
+function zoneParts(d: Date) {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: TZ,
     year: "numeric",
@@ -18,12 +19,23 @@ function istParts(d: Date) {
     y: Number(parts.year),
     m: Number(parts.month),
     d: Number(parts.day),
+    h: Number(parts.hour === "24" ? "0" : parts.hour),
+    mm: Number(parts.minute),
+    s: Number(parts.second),
   };
 }
 
+function zoneOffsetMs(d: Date) {
+  const p = zoneParts(d);
+  const asUtc = Date.UTC(p.y, p.m - 1, p.d, p.h, p.mm, p.s);
+  return asUtc - d.getTime();
+}
+
 export function istDayStartUTC(d: Date = new Date()): Date {
-  const { y, m, d: day } = istParts(d);
-  return new Date(Date.UTC(y, m - 1, day) - 5.5 * 60 * 60 * 1000);
+  const p = zoneParts(d);
+  const noonLocal = new Date(Date.UTC(p.y, p.m - 1, p.d, 12, 0, 0));
+  const offset = zoneOffsetMs(noonLocal);
+  return new Date(Date.UTC(p.y, p.m - 1, p.d) - offset);
 }
 
 export function istDayEndUTC(d: Date = new Date()): Date {
@@ -32,25 +44,26 @@ export function istDayEndUTC(d: Date = new Date()): Date {
 }
 
 export function istMondayStartUTC(d: Date = new Date()): Date {
-  const { y, m, d: day } = istParts(d);
-  const utcDate = new Date(Date.UTC(y, m - 1, day));
-  const weekday = utcDate.getUTCDay();
-  const offset = (weekday + 6) % 7;
-  utcDate.setUTCDate(utcDate.getUTCDate() - offset);
-  return new Date(utcDate.getTime() - 5.5 * 60 * 60 * 1000);
+  const dayStart = istDayStartUTC(d);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    weekday: "short",
+  }).format(dayStart);
+  const idx = DAYS.findIndex((x) => weekday.startsWith(x));
+  const offsetFromMonday = (idx + 6) % 7;
+  return new Date(dayStart.getTime() - offsetFromMonday * 24 * 60 * 60 * 1000);
 }
 
 export function istDayKey(d: Date = new Date()): string {
-  const { y, m, d: day } = istParts(d);
-  return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const p = zoneParts(d);
+  return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
 }
 
 export function istDayShort(d: Date = new Date()): string {
-  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: TZ,
     weekday: "short",
   });
   const label = fmt.format(d);
-  return DAYS.find((d) => label.startsWith(d)) ?? label;
+  return DAYS.find((x) => label.startsWith(x)) ?? label;
 }
