@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
+import { istMondayStartUTC } from "@/lib/tz";
 import Logo from "../components/Logo";
 import RebuildButton from "./RebuildButton";
+import AdjustButton from "./AdjustButton";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,12 @@ export default async function PlanPage() {
   }
 
   const plan = await getCurrentWeekPlan(user.id);
+
+  const nextMonday = new Date(istMondayStartUTC(new Date()).getTime() + 7 * 86400000);
+  const nextAdjustment = await prisma.planAdjustment.findFirst({
+    where: { userId: user.id, weekStart: nextMonday },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <main className="min-h-screen text-obsidian">
@@ -27,9 +35,17 @@ export default async function PlanPage() {
           <Link href="/" className="btn-ghost">← Back</Link>
         </nav>
 
-        <div className="mb-lg">
+        <div className="mb-lg flex flex-col sm:flex-row gap-sm sm:gap-md sm:items-center">
           <RebuildButton />
+          <AdjustButton />
         </div>
+
+        {nextAdjustment && (
+          <section className="card p-md sm:p-lg mb-lg">
+            <p className="eyebrow text-[12px] mb-xs">Adjustment applied to next week</p>
+            <p className="display text-[17px] text-ink">{nextAdjustment.reason}</p>
+          </section>
+        )}
 
         {!plan ? (
           <section className="card p-md sm:p-lg">
@@ -91,15 +107,25 @@ function WeekView({ plan }: { plan: WeekPlan }) {
                     {d.focus.replace(/_/g, " ")}
                   </span>
                   <span className="text-[13px] text-smoke">
-                    {d.targetDistanceKm ? `${d.targetDistanceKm} km` : ""}
-                    {d.targetDistanceKm && d.durationMinutes ? " · " : ""}
-                    {d.durationMinutes ? `${d.durationMinutes} min` : ""}
+                    {[
+                      d.targetDistanceKm ? `${d.targetDistanceKm} km` : null,
+                      d.durationMinutes ? `${d.durationMinutes} min` : null,
+                      d.targetPace ? `@ ${d.targetPace}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </div>
 
                 <p className="display text-[19px] sm:text-[22px] leading-[1.3] tracking-[-0.01em] text-ink">
                   {d.session}
                 </p>
+
+                {d.targetPace && (
+                  <p className="mt-xs stat-med text-[15px] text-sand-deep">
+                    Target pace · {d.targetPace}
+                  </p>
+                )}
 
                 {d.coachNotes && (
                   <p className="mt-sm display-italic text-[14px] text-graphite">

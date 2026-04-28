@@ -51,6 +51,7 @@ model Activity {
   maxHeartrate   Float?
   avgSpeed       Float?
   calories       Float?
+  description    String?
   createdAt      DateTime @default(now())
 }
 
@@ -62,6 +63,19 @@ model Plan {
   weekNumber   Int
   contentJson  String
   createdAt    DateTime @default(now())
+
+  @@unique([userId, weekStart])
+}
+
+model PlanAdjustment {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  weekStart       DateTime
+  weekNumber      Int
+  reason          String
+  overridesJson   String
+  basedOnFeedback String?
+  createdAt       DateTime @default(now())
 
   @@unique([userId, weekStart])
 }

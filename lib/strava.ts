@@ -105,4 +105,5 @@ export type StravaActivity = {
   max_heartrate?: number;
   average_speed?: number;
   calories?: number;
+  description?: string;
 };
