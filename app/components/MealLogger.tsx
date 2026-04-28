@@ -44,6 +44,17 @@ type Training = {
   sessions: TrainingSession[];
 };
 
+function istTodayKey() {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(new Date()).map((p) => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 export default function MealLogger({
   targets,
   training,
@@ -51,7 +62,7 @@ export default function MealLogger({
   targets: Targets;
   training: Training;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = istTodayKey();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [selectedMealId, setSelectedMealId] = useState<number | null>(null);

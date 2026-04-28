@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { buildContext, getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
 import { maybeAutoSync } from "@/lib/auto-sync";
 import { computeAdherence } from "@/lib/adherence";
+import { istDayStartUTC, istDayEndUTC, istDayShort } from "@/lib/tz";
 import DashboardActions from "./components/DashboardActions";
 import MealLogger from "./components/MealLogger";
 import AdherenceHeatmap from "./components/AdherenceHeatmap";
@@ -14,20 +15,15 @@ const DAILY_TARGETS = {
   fat: 63,
 };
 
-const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 function todayFromPlan(plan: WeekPlan | null) {
   if (!plan) return null;
-  const today = DAY_SHORT[new Date().getDay()];
+  const today = istDayShort();
   return plan.days.find((d) => d.day === today) ?? null;
 }
 
 async function todaysTrainingSummary(userId: number) {
-  const now = new Date();
-  const start = new Date(now);
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
+  const start = istDayStartUTC();
+  const end = istDayEndUTC();
 
   const activities = await prisma.activity.findMany({
     where: { userId, startDate: { gte: start, lt: end } },

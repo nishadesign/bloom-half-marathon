@@ -164,6 +164,13 @@ const MEALS = [
     calories: 115, proteinGrams: 2, carbsGrams: 9, fatGrams: 8, fiberGrams: 2,
     notes: "Dessert-sized treat — fits snack budget. Low protein, so pair with a protein-dense meal that day.",
   },
+  {
+    name: "Latte (180ml whole milk, 1 tsp sugar)",
+    mealType: "snack",
+    portionDescription: "60ml espresso + 180ml whole milk, steamed + 1 tsp sugar",
+    calories: 130, proteinGrams: 6, carbsGrams: 13, fatGrams: 6, fiberGrams: 0,
+    notes: "Pre-run caffeine + carbs. Protein from milk counts toward daily total.",
+  },
 ];
 
 async function main() {

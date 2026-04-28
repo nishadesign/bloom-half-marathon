@@ -37,13 +37,10 @@ export type WeekPlan = {
   keyFocus: string;
 };
 
+import { istMondayStartUTC } from "./tz";
+
 function mondayOf(d: Date) {
-  const date = new Date(d);
-  const day = date.getUTCDay();
-  const diff = (day + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - diff);
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
+  return istMondayStartUTC(d);
 }
 
 export async function buildContext(userId: number) {

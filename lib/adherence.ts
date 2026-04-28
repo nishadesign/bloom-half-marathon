@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { istDayStartUTC, istMondayStartUTC } from "./tz";
 
 const WEEKS_BACK = 12;
 const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -23,18 +24,29 @@ export type DayScore = {
   mealCount: number;
 };
 
-function startOfUtcDay(d: Date) {
-  const x = new Date(d);
-  x.setUTCHours(0, 0, 0, 0);
-  return x;
+function startOfIstDay(d: Date) {
+  return istDayStartUTC(d);
 }
 
 function mondayOf(d: Date) {
-  const date = startOfUtcDay(d);
-  const day = date.getUTCDay();
-  const diff = (day + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - diff);
-  return date;
+  return istMondayStartUTC(d);
+}
+
+function istKey(d: Date): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function istWeekday(d: Date): string {
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", weekday: "short" });
+  const label = fmt.format(d);
+  return DAY_SHORT.find((d) => label.startsWith(d)) ?? label;
 }
 
 export async function computeAdherence(
@@ -42,9 +54,8 @@ export async function computeAdherence(
   raceDate: Date,
 ): Promise<DayScore[][]> {
   const now = new Date();
-  const endDay = startOfUtcDay(now);
-  const startWeek = mondayOf(new Date(endDay));
-  startWeek.setUTCDate(startWeek.getUTCDate() - (WEEKS_BACK - 1) * 7);
+  const endDay = startOfIstDay(now);
+  const startWeek = new Date(mondayOf(now).getTime() - (WEEKS_BACK - 1) * 7 * 24 * 60 * 60 * 1000);
 
   const raceWeekStart = mondayOf(raceDate);
   const weeksSpan =
@@ -67,7 +78,7 @@ export async function computeAdherence(
 
   const activityByDate = new Map<string, typeof activities>();
   for (const a of activities) {
-    const key = startOfUtcDay(a.startDate).toISOString().slice(0, 10);
+    const key = istKey(a.startDate);
     const arr = activityByDate.get(key) ?? [];
     arr.push(a);
     activityByDate.set(key, arr);
@@ -75,7 +86,7 @@ export async function computeAdherence(
 
   const logsByDate = new Map<string, typeof logs>();
   for (const l of logs) {
-    const key = startOfUtcDay(l.date).toISOString().slice(0, 10);
+    const key = istKey(l.date);
     const arr = logsByDate.get(key) ?? [];
     arr.push(l);
     logsByDate.set(key, arr);
@@ -83,24 +94,22 @@ export async function computeAdherence(
 
   const planByWeekStart = new Map<string, ReturnType<typeof parsePlan>>();
   for (const p of plans) {
-    const key = startOfUtcDay(p.weekStart).toISOString().slice(0, 10);
+    const key = istKey(p.weekStart);
     planByWeekStart.set(key, parsePlan(p.contentJson));
   }
 
-  const todayKey = endDay.toISOString().slice(0, 10);
+  const todayKey = istKey(endDay);
   const grid: DayScore[][] = [];
 
   for (let w = 0; w < totalWeeks; w++) {
     const week: DayScore[] = [];
-    const weekStart = new Date(startWeek);
-    weekStart.setUTCDate(weekStart.getUTCDate() + w * 7);
-    const weekPlan = planByWeekStart.get(weekStart.toISOString().slice(0, 10));
+    const weekStart = new Date(startWeek.getTime() + w * 7 * 24 * 60 * 60 * 1000);
+    const weekPlan = planByWeekStart.get(istKey(weekStart));
 
     for (let d = 0; d < 7; d++) {
-      const date = new Date(weekStart);
-      date.setUTCDate(date.getUTCDate() + d);
-      const key = date.toISOString().slice(0, 10);
-      const dayName = DAY_SHORT[date.getUTCDay()];
+      const date = new Date(weekStart.getTime() + d * 24 * 60 * 60 * 1000);
+      const key = istKey(date);
+      const dayName = istWeekday(date);
       const inFuture = key > todayKey;
 
       const dayPlan = weekPlan?.days.find((x) => x.day === dayName);
