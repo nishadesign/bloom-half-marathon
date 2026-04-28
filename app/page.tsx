@@ -9,12 +9,7 @@ import MealLogger from "./components/MealLogger";
 import AdherenceHeatmap from "./components/AdherenceHeatmap";
 import Logo from "./components/Logo";
 
-const DAILY_TARGETS = {
-  calories: 2278,
-  protein: 160,
-  carbs: 280,
-  fat: 63,
-};
+import { DAILY_TARGETS } from "@/lib/targets";
 
 function todayFromPlan(plan: WeekPlan | null) {
   if (!plan) return null;

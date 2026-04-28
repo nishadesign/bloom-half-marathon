@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
 import Logo from "../components/Logo";
+import RebuildButton from "./RebuildButton";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,14 @@ export default async function PlanPage() {
           <Link href="/" className="btn-ghost">← Back</Link>
         </nav>
 
+        <div className="mb-lg">
+          <RebuildButton />
+        </div>
+
         {!plan ? (
           <section className="card p-md sm:p-lg">
             <p className="display-italic text-[16px] text-smoke">
-              No plan for this week yet. Head back and hit regenerate.
+              No plan for this week yet. Hit Rebuild plan above.
             </p>
           </section>
         ) : (
