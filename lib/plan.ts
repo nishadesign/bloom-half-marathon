@@ -269,6 +269,8 @@ function validateWeek(w: unknown): w is WeekPlan {
   return true;
 }
 
+const MAX_WEEKS_PER_REBUILD = 4;
+
 export async function generatePlanArc(
   userId: number,
   constraints?: string,
@@ -290,7 +292,7 @@ export async function generatePlanArc(
   let idx = 0;
   for (
     let cur = new Date(weekStart);
-    cur.getTime() <= raceMonday.getTime();
+    cur.getTime() <= raceMonday.getTime() && idx < MAX_WEEKS_PER_REBUILD;
     cur = new Date(cur.getTime() + 7 * 86400000), idx++
   ) {
     const weeksToRace = Math.max(
@@ -424,9 +426,15 @@ Return exactly ${totalWeeks} WeekPlan entries, ordered by weekStart ascending.`;
     return { spec, plan: fallbackWeek(spec.weekNumber, spec.weekStart, spec.weeksToRace) };
   });
 
+  const lastWeekStart = finalWeeks[finalWeeks.length - 1].spec.weekStart;
+  const nextWeekStartBoundary = new Date(lastWeekStart.getTime() + 7 * 86400000);
+
   await prisma.$transaction([
     prisma.plan.deleteMany({
-      where: { userId, weekStart: { gte: weekStart } },
+      where: {
+        userId,
+        weekStart: { gte: weekStart, lt: nextWeekStartBoundary },
+      },
     }),
     prisma.plan.createMany({
       data: finalWeeks.map(({ spec, plan }) => ({
