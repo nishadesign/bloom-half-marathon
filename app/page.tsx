@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { buildContext, getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
 import { maybeAutoSync } from "@/lib/auto-sync";
@@ -81,7 +82,9 @@ export default async function Home() {
 
         {todaySession && training.count === 0 && (
           <section className="mb-lg rise stagger-3">
-            <SectionHeader numeral="I" title="Today's session" />
+            <div className="flex items-baseline justify-between gap-sm mb-md">
+              <SectionHeader numeral="I" title="Today's session" />
+            </div>
             <article className="card card-hover p-md sm:p-lg">
               <div className="flex items-baseline justify-between gap-sm flex-wrap mb-sm">
                 <p className="display-italic text-[14px] text-sand-deep">
@@ -103,7 +106,28 @@ export default async function Home() {
                   </p>
                 </>
               )}
+              <div className="rule my-md" />
+              <Link
+                href="/plan"
+                className="display-italic text-[14px] text-sand-deep hover:text-ink transition-colors"
+              >
+                View the full week →
+              </Link>
             </article>
+          </section>
+        )}
+
+        {!todaySession && plan && (
+          <section className="mb-lg rise stagger-3">
+            <Link
+              href="/plan"
+              className="card card-hover p-md sm:p-lg block"
+            >
+              <p className="eyebrow mb-xs text-[14px]">Week {plan.weekNumber}</p>
+              <p className="display text-[20px] sm:text-[22px] tracking-[-0.01em]">
+                View the full week →
+              </p>
+            </Link>
           </section>
         )}
 
