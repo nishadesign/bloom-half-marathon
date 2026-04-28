@@ -193,8 +193,16 @@ WeekPlan schema:
 
 export async function getCurrentWeekPlan(userId: number) {
   const weekStart = mondayOf(new Date());
-  const plan = await prisma.plan.findUnique({
-    where: { userId_weekStart: { userId, weekStart } },
+  // Match by calendar-day window rather than exact timestamp — plans saved
+  // under an older tz convention may be a few hours off from the current Monday.
+  const windowStart = new Date(weekStart.getTime() - 12 * 60 * 60 * 1000);
+  const windowEnd = new Date(weekStart.getTime() + 12 * 60 * 60 * 1000);
+  const plan = await prisma.plan.findFirst({
+    where: {
+      userId,
+      weekStart: { gte: windowStart, lt: windowEnd },
+    },
+    orderBy: { weekStart: "desc" },
   });
   if (!plan) return null;
   return JSON.parse(plan.contentJson) as WeekPlan;
