@@ -27,9 +27,17 @@ export default async function LoginPage() {
             We use your Strava athlete ID as your login. If you're new, we'll
             finish setup on the next screen.
           </p>
-          <a href="/api/strava/connect" className="btn-primary inline-block">
-            Connect Strava
-          </a>
+          <div className="flex flex-col sm:flex-row gap-sm sm:items-center">
+            <a href="/api/strava/connect" className="btn-primary inline-block">
+              Connect Strava
+            </a>
+            <a
+              href="/onboarding"
+              className="display-italic text-[14px] text-sand-deep hover:text-ink transition-colors"
+            >
+              Continue without Strava →
+            </a>
+          </div>
         </section>
       </div>
     </main>
