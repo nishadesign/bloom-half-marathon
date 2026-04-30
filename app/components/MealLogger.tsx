@@ -211,15 +211,34 @@ export default function MealLogger({
             <div className="flex gap-xs items-end">
               <div className="flex-1">
                 <label htmlFor="portions" className="eyebrow block mb-xs text-[14px]">Portions</label>
-                <input
-                  id="portions"
-                  type="number"
-                  min={0.25}
-                  step={0.25}
-                  value={portions}
-                  onChange={(e) => setPortions(Number(e.target.value) || 1)}
-                  className="field"
-                />
+                <div className="flex items-center gap-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPortions((p) => Math.max(0.25, +(p - 0.25).toFixed(2)))}
+                    aria-label="Decrease portions"
+                    className="btn-ghost !min-h-[44px] !w-[44px] !p-0 text-[20px] leading-none"
+                  >
+                    −
+                  </button>
+                  <input
+                    id="portions"
+                    type="number"
+                    inputMode="decimal"
+                    min={0.25}
+                    step={0.25}
+                    value={portions}
+                    onChange={(e) => setPortions(Number(e.target.value) || 1)}
+                    className="field text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPortions((p) => +(p + 0.25).toFixed(2))}
+                    aria-label="Increase portions"
+                    className="btn-ghost !min-h-[44px] !w-[44px] !p-0 text-[20px] leading-none"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <button
                 onClick={logMeal}

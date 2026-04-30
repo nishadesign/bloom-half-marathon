@@ -3,6 +3,7 @@ import Logo from "../components/Logo";
 import { getCurrentUser, setSessionCookie } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { resolveTemplateKey } from "@/lib/prescribed-plan";
+import { generatePlanArc } from "@/lib/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,11 @@ async function createUser(formData: FormData) {
   });
 
   await setSessionCookie(user.id);
+  try {
+    await generatePlanArc(user.id);
+  } catch (e) {
+    console.error("[onboarding] generatePlanArc failed:", e);
+  }
   redirect("/");
 }
 

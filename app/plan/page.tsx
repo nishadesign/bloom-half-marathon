@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
+import { istMondayStartUTC } from "@/lib/tz";
 import Logo from "../components/Logo";
 import RebuildButton from "./RebuildButton";
+import DoneButton from "./DoneButton";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,23 @@ export default async function PlanPage() {
   if (!user) redirect("/login");
 
   const plan = await getCurrentWeekPlan(user.id);
+  const stravaConnected = !!user.stravaAccessToken;
+
+  const weekStart = istMondayStartUTC();
+  const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
+  const weekActivities = await prisma.activity.findMany({
+    where: { userId: user.id, startDate: { gte: weekStart, lt: weekEnd } },
+    select: { startDate: true },
+  });
+  const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+  const doneDays = new Set(
+    weekActivities.map((a) => {
+      const dayIdx = Math.floor(
+        (a.startDate.getTime() - weekStart.getTime()) / 86400000,
+      );
+      return DAY_NAMES[Math.max(0, Math.min(6, dayIdx))];
+    }),
+  );
 
   return (
     <main className="min-h-screen text-obsidian">
@@ -37,14 +57,26 @@ export default async function PlanPage() {
             </p>
           </section>
         ) : (
-          <WeekView plan={plan} />
+          <WeekView
+            plan={plan}
+            showDone={!stravaConnected}
+            doneDays={doneDays}
+          />
         )}
       </div>
     </main>
   );
 }
 
-function WeekView({ plan }: { plan: WeekPlan }) {
+function WeekView({
+  plan,
+  showDone,
+  doneDays,
+}: {
+  plan: WeekPlan;
+  showDone: boolean;
+  doneDays: Set<string>;
+}) {
   return (
     <>
       <header className="mb-lg rise stagger-2">
@@ -130,6 +162,12 @@ function WeekView({ plan }: { plan: WeekPlan }) {
                   <p className="mt-xs display-italic text-[13px] text-smoke">
                     {d.nutrition.notes}
                   </p>
+                )}
+
+                {showDone && d.focus !== "rest" && (
+                  <div className="mt-md">
+                    <DoneButton day={d.day} alreadyDone={doneDays.has(d.day)} />
+                  </div>
                 )}
               </div>
             </div>
