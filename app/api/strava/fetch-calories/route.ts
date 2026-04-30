@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 import { refreshIfNeeded, fetchActivityDetail } from "@/lib/strava";
 
 export async function POST() {
-  const user = await prisma.user.findFirst();
-  if (!user) return NextResponse.json({ error: "No user" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   if (!user.stravaAccessToken) {
     return NextResponse.json({ error: "Strava not connected" }, { status: 400 });
   }

@@ -21,7 +21,8 @@ model User {
   longestRecentRunKm  Float
   crossfitDays        String
   runDays             String
-  stravaAthleteId     String?
+  planTemplateKey     String    @default("nisha")
+  stravaAthleteId     String?   @unique
   stravaAccessToken   String?
   stravaRefreshToken  String?
   stravaTokenExpires  Int?

@@ -1,19 +1,27 @@
 import type { DayScore } from "@/lib/adherence";
 
 const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export default function AdherenceHeatmap({ grid }: { grid: DayScore[][] }) {
-  const flat = grid.flat();
-  const totalPast = flat.filter((d) => !d.inFuture).length;
-  const goodDays = flat.filter((d) => !d.inFuture && d.workoutHit && d.nutritionHit).length;
+type Props = {
+  grid: DayScore[][];
+  raceDate: Date;
+};
+
+export default function AdherenceHeatmap({ grid, raceDate }: Props) {
+  const now = new Date();
+  const daysLeft = Math.max(
+    0,
+    Math.ceil((raceDate.getTime() - now.getTime()) / MS_PER_DAY),
+  );
 
   return (
     <article className="card p-md sm:p-lg">
       <div className="mb-md">
         <div className="flex items-baseline gap-xs">
-          <span className="stat-big text-[56px] sm:text-[72px]">{goodDays}</span>
+          <span className="stat-big text-[56px] sm:text-[72px]">{daysLeft}</span>
           <span className="display-italic text-[18px] text-smoke">
-            of {totalPast}
+            {daysLeft === 1 ? "day to race" : "days to race"}
           </span>
         </div>
       </div>

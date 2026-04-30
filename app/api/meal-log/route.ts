@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 import { istDayKey, istDayStartUTC, istDayEndUTC } from "@/lib/tz";
 
 function dayBounds(isoDate: string) {
@@ -9,8 +10,8 @@ function dayBounds(isoDate: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const user = await prisma.user.findFirst();
-  if (!user) return NextResponse.json({ error: "No user" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const dateParam = req.nextUrl.searchParams.get("date") ?? istDayKey();
   const { start, end } = dayBounds(dateParam);
@@ -24,8 +25,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await prisma.user.findFirst();
-  if (!user) return NextResponse.json({ error: "No user" }, { status: 404 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
   const body = (await req.json()) as {
     mealId: number;

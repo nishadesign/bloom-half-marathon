@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { buildContext, getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
+import { getCurrentUser } from "@/lib/session";
+import { getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
 import { maybeAutoSync } from "@/lib/auto-sync";
 import { computeAdherence } from "@/lib/adherence";
 import { istDayStartUTC, istDayEndUTC, istDayShort } from "@/lib/tz";
@@ -43,18 +45,11 @@ async function todaysTrainingSummary(userId: number) {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const user = await prisma.user.findFirst();
-  if (!user) {
-    return (
-      <main className="p-6">
-        <p className="text-graphite">No user seeded. Run <code>npx tsx prisma/seed.ts</code>.</p>
-      </main>
-    );
-  }
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   const connected = !!user.stravaAccessToken;
   if (connected) await maybeAutoSync(user.id);
-  const ctx = await buildContext(user.id);
   const training = await todaysTrainingSummary(user.id);
   const plan = await getCurrentWeekPlan(user.id);
   const todaySession = todayFromPlan(plan);
@@ -127,7 +122,7 @@ export default async function Home() {
         )}
 
         <section className="mb-lg rise stagger-4">
-          <AdherenceHeatmap grid={adherence} />
+          <AdherenceHeatmap grid={adherence} raceDate={user.raceDate} />
         </section>
 
         <section className="rise stagger-5">

@@ -10,8 +10,8 @@ import {
 import { DAILY_TARGETS } from "./targets";
 import { istMondayStartUTC } from "./tz";
 import {
-  PRESCRIBED_PLAN,
   RACE_WEEK_NUMBER,
+  getPlanTemplate,
   getPrescribedWeek,
   pickSession,
   type PrescribedSession,
@@ -314,8 +314,9 @@ function assembleWeek(
   prescribedWeekNumber: number,
   weekStart: Date,
   weeksToRace: number,
+  templateKey: string,
 ): WeekPlan {
-  const week = getPrescribedWeek(prescribedWeekNumber);
+  const week = getPrescribedWeek(prescribedWeekNumber, templateKey);
   const template = weekTemplate(weeksToRace);
   const days = template.map((shape, i) => {
     const date = new Date(weekStart.getTime() + i * 86400000);
@@ -357,7 +358,7 @@ function prescribedWeekNumberFor(weekStart: Date, raceDate: Date): number {
 export async function generateWeekPlan(userId: number): Promise<WeekPlan> {
   const { user, weekStart, weeksToRace } = await buildContext(userId);
   const weekNumber = prescribedWeekNumberFor(weekStart, user.raceDate);
-  const plan = assembleWeek(weekNumber, weekStart, weeksToRace);
+  const plan = assembleWeek(weekNumber, weekStart, weeksToRace, user.planTemplateKey);
 
   await prisma.plan.upsert({
     where: { userId_weekStart: { userId: user.id, weekStart } },
@@ -397,7 +398,7 @@ export async function generatePlanArc(
   }
 
   const plans = weeks.map(({ weekStart: ws, weekNumber, weeksToRace }) =>
-    assembleWeek(weekNumber, ws, weeksToRace),
+    assembleWeek(weekNumber, ws, weeksToRace, user.planTemplateKey),
   );
 
   const lastWeekStart = weeks[weeks.length - 1].weekStart;
@@ -420,8 +421,9 @@ export async function generatePlanArc(
     }),
   ]);
 
+  const templateWeeks = getPlanTemplate(user.planTemplateKey);
   const fallbackCount = plans.filter(
-    (p) => !PRESCRIBED_PLAN.some((w) => w.weekNumber === p.weekNumber),
+    (p) => !templateWeeks.some((w) => w.weekNumber === p.weekNumber),
   ).length;
 
   return {

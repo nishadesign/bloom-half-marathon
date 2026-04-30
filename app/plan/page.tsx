@@ -1,26 +1,17 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
 import { getCurrentWeekPlan, type WeekPlan } from "@/lib/plan";
-import { istMondayStartUTC } from "@/lib/tz";
 import Logo from "../components/Logo";
 import RebuildButton from "./RebuildButton";
-import AdjustButton from "./AdjustButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlanPage() {
-  const user = await prisma.user.findFirst();
-  if (!user) {
-    return <main className="p-6">No user.</main>;
-  }
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   const plan = await getCurrentWeekPlan(user.id);
-
-  const nextMonday = new Date(istMondayStartUTC(new Date()).getTime() + 7 * 86400000);
-  const nextAdjustment = await prisma.planAdjustment.findFirst({
-    where: { userId: user.id, weekStart: nextMonday },
-    orderBy: { createdAt: "desc" },
-  });
 
   return (
     <main className="min-h-screen text-obsidian">
@@ -37,15 +28,7 @@ export default async function PlanPage() {
 
         <div className="mb-lg flex flex-col sm:flex-row gap-sm sm:gap-md sm:items-center">
           <RebuildButton />
-          <AdjustButton />
         </div>
-
-        {nextAdjustment && (
-          <section className="card p-md sm:p-lg mb-lg">
-            <p className="eyebrow text-[12px] mb-xs">Adjustment applied to next week</p>
-            <p className="display text-[17px] text-ink">{nextAdjustment.reason}</p>
-          </section>
-        )}
 
         {!plan ? (
           <section className="card p-md sm:p-lg">
